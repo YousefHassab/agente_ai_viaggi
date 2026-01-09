@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-# Importazione esplicita per evitare conflitti di versione
+# Importazioni dirette per evitare ImportError nel 2026
 from langchain.agents.agent import AgentExecutor
 from langchain.agents.tool_calling_agent.base import create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,28 +10,24 @@ from tools import travel_tools
 load_dotenv()
 
 def get_travel_agent():
-    # Usiamo gemini-1.5-flash: ha i limiti di quota più generosi per gli agenti
+    # Usiamo gemini-1.5-flash: veloce e gratuito
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
     
-    # SYSTEM PROMPT (Principi Capitolo 6: Pianificazione e Strumenti)
-    # Definiamo l'identità dell'agente e come deve integrare la ricerca web
+    # SYSTEM PROMPT (Principi Capitolo 6: Agentic Pattern)
+    # Istruiamo l'agente a pianificare e usare il web per evitare dati obsoleti
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Sei un AI Travel Engineer esperto.
-        Il tuo compito è pianificare viaggi basandoti su dati REALI.
+        ("system", """Sei un AI Travel Engineer esperto. Il tuo compito è pianificare viaggi basandoti su dati REALI.
         
-        INTEGRAZIONE RICERCA WEB (Cap. 6):
-        1. Se l'utente chiede prezzi di voli o hotel per il 2026, usa 'web_search'.
-        2. Analizza i risultati per estrarre informazioni aggiornate.
-        3. Usa 'calculator' per verificare che la somma non superi il BUDGET.
-        
-        REGOLE:
-        - Rispondi in italiano.
-        - Se il budget è troppo basso, proponi alternative economiche o riduci i giorni."""),
+        LOGICA DI RAGIONAMENTO:
+        1. RICERCA WEB: Se non conosci i prezzi attuali per il 2026 di voli o hotel, usa SEMPRE 'web_search'.
+        2. ANALISI: Estrai dai risultati della ricerca le informazioni più economiche e rilevanti.
+        3. BUDGET: Usa 'calculator' per verificare che la somma totale (Volo + Hotel + Pasti) sia inferiore al BUDGET.
+        4. RISPOSTA: Presenta un itinerario strutturato giorno per giorno e una tabella dei costi."""),
         ("human", "{input}"),
         ("placeholder", "{agent_scratchpad}"),
     ])
 
-    # Creazione dell'agente (Metodo moderno Tool Calling)
+    # Creazione dell'agente moderno
     agent = create_tool_calling_agent(llm, travel_tools, prompt)
     
     # L'Executor gestisce il ciclo Thought -> Action -> Observation
